@@ -86,7 +86,7 @@ class LogProcessor(DataProcessor):
         if isinstance(data, list):
             return all(self._is_valid_entry(item) for item in data)
         return False
-    
+
     def ingest(self, data: dict[str, str] | list[dict[str, str]]) -> None:
         if not self.validate(data):
             raise TypeError("Improper dict data")
