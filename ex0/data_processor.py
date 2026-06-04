@@ -25,10 +25,15 @@ class DataProcessor(ABC):
 
 class NumericProcessor(DataProcessor):
     def validate(self, data: Any) -> bool:
+        if isinstance(data, bool):
+            return False
         if isinstance(data, (int, float)):
             return True
         elif isinstance(data, list):
-            return all(isinstance(item, (int, float)) for item in data)
+            return all(
+                not isinstance(item, bool) and isinstance(item, (int, float))
+                for item in data
+                )
         return False
 
     def ingest(self, data: int | float | list[int | float]) -> None:
@@ -47,8 +52,11 @@ def numeric_tester() -> None:
     numeric = NumericProcessor()
     print(" Trying to validate input '42':", numeric.validate(42))
     print(" Trying to validate input 'Hello':", numeric.validate("Hello"))
+    print(" Trying to validate input True:", numeric.validate(True))
     print(" Trying to validate input [1, 2, 'hello']:",
           numeric.validate([1, 2, 'hello']))
+    print(" Trying to validate input [1, 2, False]:",
+          numeric.validate([1, 2, False]))
     print(" Trying to validate input [1, 2, 3.0]:",
           numeric.validate([1, 2, 3.0]))
 
