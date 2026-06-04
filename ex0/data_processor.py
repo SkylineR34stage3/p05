@@ -1,6 +1,13 @@
 from abc import ABC, abstractmethod
 from typing import Any
 
+_GRN = "\033[92m"  # bright green
+_RED = "\033[91m"  # bright red
+_YLW = "\033[93m"  # bright yellow
+_CYN = "\033[96m"  # bright cyan
+_BLD = "\033[1m"   # bold
+_RST = "\033[0m"   # reset
+
 
 class DataProcessor(ABC):
     def __init__(self) -> None:
@@ -33,7 +40,7 @@ class NumericProcessor(DataProcessor):
             return all(
                 not isinstance(item, bool) and isinstance(item, (int, float))
                 for item in data
-                )
+            )
         return False
 
     def ingest(self, data: int | float | list[int | float]) -> None:
@@ -46,49 +53,103 @@ class NumericProcessor(DataProcessor):
             self._data.append(str(data))
 
 
+class TextProcessor(DataProcessor):
+    def validate(self, data: Any) -> bool:
+        if isinstance(data, str):
+            return True
+        if isinstance(data, list):
+            return all(isinstance(item, str) for item in data)
+        return False
+
+    def ingest(self, data: str | list[str]) -> None:
+        if not self.validate(data):
+            raise TypeError("Improper string data")
+        if isinstance(data, list):
+            for item in data:
+                self._data.append(item)
+        else:
+            self._data.append(data)
+
+
+def _header(title: str) -> None:
+    bar = "═" * 46
+    print(f"\n{_BLD}{_CYN}{bar}")
+    print(f"  {title}")
+    print(f"{bar}{_RST}\n")
+
+
+def _val(label: str, result: bool) -> None:
+    mark = f"{_GRN}[OK]  True{_RST}" if result else f"{_RED}[KO]  False{_RST}"
+    print(f"  validate({_CYN}{label.ljust(18)}{_RST}) → {mark}")
+
+
 def numeric_tester() -> None:
-    print("Testing Numeric Processor...")
-
+    _header("Numeric Processor")
     numeric = NumericProcessor()
-    print(" Trying to validate input '42':", numeric.validate(42))
-    print(" Trying to validate input 'Hello':", numeric.validate("Hello"))
-    print(" Trying to validate input True:", numeric.validate(True))
-    print(" Trying to validate input [1, 2, 'hello']:",
-          numeric.validate([1, 2, 'hello']))
-    print(" Trying to validate input [1, 2, False]:",
-          numeric.validate([1, 2, False]))
-    print(" Trying to validate input [1, 2, 3.0]:",
-          numeric.validate([1, 2, 3.0]))
 
-    print(" Test invalid ingestion of string 'foo' without prior validation:")
+    print(f"  {_BLD}Validation:{_RST}")
+    _val("42", numeric.validate(42))
+    _val("3.14", numeric.validate(3.14))
+    _val("'Hello'", numeric.validate("Hello"))
+    _val("True", numeric.validate(True))
+    _val("[1, 2, 'hello']", numeric.validate([1, 2, 'hello']))
+    _val("[1, 2, False]", numeric.validate([1, 2, False]))
+    _val("[1, 2, 3.0]", numeric.validate([1, 2, 3.0]))
+    _val("[]", numeric.validate([]))
+
+    print(f"\n  {_BLD}Invalid ingest (no prior validate):{_RST}")
     try:
         numeric.ingest("foo")
     except TypeError as e:
-        print(f" Got exception: {e}")
+        print(f"  {_YLW}!  ingest('foo') → {e}{_RST}")
 
-    print("  Processing data: [1, 2, 3, 4, 5]")
-    if numeric.validate([1, 2, 3, 4, 5]):
-        numeric.ingest([1, 2, 3, 4, 5])
+    print(f"\n  {_BLD}Ingest [1, 2, 3, 4, 5]:{_RST}")
+    numeric.ingest([1, 2, 3, 4, 5])
+    print("  Extracting 3 of 5:")
+    for _ in range(3):
+        rank, value = numeric.output()
+        print(f"    {_CYN}[rank {rank}]{_RST} → {value}")
 
-        print("  Extracting 3 values:")
-        for _ in range(3):
+    print(f"\n  {_BLD}Extract remaining + 1 extra (empty guard):{_RST}")
+    for _ in range(3):
+        try:
             rank, value = numeric.output()
-            print(f"  Numeric value {rank}: {value}")
-        
-        print("   Extract all the rest and 1 more:")
-        for _ in range(3):
-            try:
-                rank, value = numeric.output()
-            except IndexError as e:
-                print(f"   Error on emtpy processor: {e}")
-                return
-            print(f"   Numeric value {rank}: {value}")
+            print(f"    {_CYN}[rank {rank}]{_RST} → {value}")
+        except IndexError as e:
+            print(f"  {_YLW}!  Empty processor → {e}{_RST}")
+            break
+
+
+def text_tester() -> None:
+    _header("Text Processor")
+    text = TextProcessor()
+
+    print(f"  {_BLD}Validation:{_RST}")
+    _val("'Hello'", text.validate("Hello"))
+    _val("42", text.validate(42))
+    _val("True", text.validate(True))
+    _val("['Hi', 'five']", text.validate(['Hi', 'five']))
+    _val("['hi', 42]", text.validate(['hi', 42]))
+    _val("[1, 2, 3]", text.validate([1, 2, 3]))
+    _val("[]", text.validate([]))
+
+    print(f"\n  {_BLD}Invalid ingest (no prior validate):{_RST}")
+    try:
+        text.ingest(42)
+    except TypeError as e:
+        print(f"  {_YLW}!  ingest(42) → {e}{_RST}")
+
+    print(f"\n  {_BLD}Ingest ['Hello', 'Nexus', 'World']:{_RST}")
+    text.ingest(['Hello', 'Nexus', 'World'])
+    print("  Extracting 1 of 3:")
+    rank, value = text.output()
+    print(f"    {_CYN}[rank {rank}]{_RST} → {value}")
 
 
 def main() -> None:
-    print("=== Code Nexus - Data Processor ===\n")
-
+    print(f"{_BLD}=== Code Nexus - Data Processor ==={_RST}")
     numeric_tester()
+    text_tester()
 
 
 if __name__ == "__main__":
