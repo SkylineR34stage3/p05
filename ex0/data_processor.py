@@ -66,14 +66,23 @@ def numeric_tester() -> None:
     except TypeError as e:
         print(f" Got exception: {e}")
 
-    print(" Processing data: [1, 2, 3, 4, 5]")
+    print("  Processing data: [1, 2, 3, 4, 5]")
     if numeric.validate([1, 2, 3, 4, 5]):
         numeric.ingest([1, 2, 3, 4, 5])
 
-        print(" Extracting 3 values:")
+        print("  Extracting 3 values:")
         for _ in range(3):
             rank, value = numeric.output()
-            print(f" Numeric value {rank}: {value}")
+            print(f"  Numeric value {rank}: {value}")
+        
+        print("   Extract all the rest and 1 more:")
+        for _ in range(3):
+            try:
+                rank, value = numeric.output()
+            except IndexError as e:
+                print(f"   Error on emtpy processor: {e}")
+                return
+            print(f"   Numeric value {rank}: {value}")
 
 
 def main() -> None:
