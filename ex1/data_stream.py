@@ -22,12 +22,22 @@ class DataProcessor(ABC):
     def ingest(self, data: Any) -> None:
         pass
 
+    @abstractmethod
+    def get_name(self) -> str:
+        pass
+
     def output(self) -> tuple[int, str]:
         if not self._data:
             raise IndexError("No data left in processor")
         res = (self._rank, self._data.pop(0))
         self._rank += 1
         return res
+
+    def get_data(self) -> list[str]:
+        return self._data
+
+    def get_rank(self) -> int:
+        return self._rank
 
 
 class NumericProcessor(DataProcessor):
@@ -52,6 +62,9 @@ class NumericProcessor(DataProcessor):
         else:
             self._data.append(str(data))
 
+    def get_name(self) -> str:
+        return "Numeric Processor"
+
 
 class TextProcessor(DataProcessor):
     def validate(self, data: Any) -> bool:
@@ -69,6 +82,9 @@ class TextProcessor(DataProcessor):
                 self._data.append(item)
         else:
             self._data.append(data)
+
+    def get_name(self) -> str:
+        return "Text Processor"
 
 
 class LogProcessor(DataProcessor):
@@ -94,6 +110,35 @@ class LogProcessor(DataProcessor):
         self._data.extend(
             f"{item['log_level']}: {item['log_message']}" for item in items
         )
+
+    def get_name(self) -> str:
+        return "Log Processor"
+
+
+class DataStream:
+    def __init__(self) -> None:
+        self._processors: list[DataProcessor] = []
+
+    def register_processor(self, proc: DataProcessor) -> None:
+        self._processors.append(proc)
+
+    def process_stream(self, stream: list[Any]) -> None:
+        for data in stream:
+            accepted = False
+            for proc in self._processors:
+                if proc.validate(data):
+                    proc.ingest(data)
+                    accepted = True
+                    break
+            if not accepted:
+                print(f"Can't process element in stream: {data}")
+
+    def print_processors_stats(self) -> None:
+        for proc in self._processors:
+            total = proc.get_rank() + len(proc.get_data())
+            print(f"{proc.get_name()}: "
+                  f"total {total} items processed, "
+                  f"remaining {len(proc.get_data())} on processor")
 
 
 def _header(title: str) -> None:
