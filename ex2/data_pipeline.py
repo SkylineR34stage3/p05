@@ -20,7 +20,11 @@ class CSVExport:
 
 
 class JSONExport:
-    pass
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        print("CSV Output:\n" +
+              "{" +
+              ", ".join(f'"item_{rank}": "{value}"' for rank, value in data) +
+              "}")
 
 
 class DataProcessor(ABC):
@@ -183,8 +187,6 @@ def stream_tester() -> None:
     log = LogProcessor()
     stream = DataStream()
 
-    csv = CSVExport()
-
     batch = [
         'Hello world',
         [3.14, -1, 2.71],
@@ -194,6 +196,19 @@ def stream_tester() -> None:
         ],
         42,
         ['Hi', 'five'],
+    ]
+
+    batch2 = [
+        21,
+        ['I love AI', 'LLMs are wonderful', 'Stay healthy'],
+        [
+            {'log_level': 'ERROR', 'log_message': '500 server crash'},
+            {
+                'log_level': 'NOTICE',
+                'log_message': 'Certificate expires in 10 days'}
+        ],
+        [32, 42, 64, 84, 128, 168],
+        'World hello'
     ]
 
     print(f"  {_BLD}Initialize Data Stream...\n{_RST}")
@@ -210,7 +225,20 @@ def stream_tester() -> None:
 
     print(f"\n  {_BLD}Send 3 processed data"
           f"from each processor to a CSV plugin:{_RST}")
-    stream.output_pipeline(3, csv)
+    stream.output_pipeline(3, CSVExport())
+
+    print()
+    stream.print_processors_stats()
+    print(f"\n  {_BLD}Send another batch of data:{_RST} {batch2}\n")
+    stream.process_stream(batch2)
+    stream.print_processors_stats()
+
+    print(f"\n  {_BLD}Send 5 processed data"
+          f"from each processor to a JSON plugin:{_RST}")
+    stream.output_pipeline(5, JSONExport())
+
+    print()
+    stream.print_processors_stats()
 
 
 def main() -> None:
