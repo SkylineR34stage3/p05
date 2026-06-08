@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Any
+from typing import Any, Protocol
 
 _GRN = "\033[92m"  # bright green
 _RED = "\033[91m"  # bright red
@@ -7,6 +7,11 @@ _YLW = "\033[93m"  # bright yellow
 _CYN = "\033[96m"  # bright cyan
 _BLD = "\033[1m"   # bold
 _RST = "\033[0m"   # reset
+
+
+class ExportPlugin(Protocol):
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        ...
 
 
 class DataProcessor(ABC):
@@ -144,6 +149,17 @@ class DataStream:
             print(f"{proc.get_name()}: "
                   f"total {total} items processed, "
                   f"remaining {len(proc.get_data())} on processor")
+
+    def output_pipeline(self, nb: int, plugin: ExportPlugin) -> None:
+        collected: list[tuple[int, str]] = []
+        for proc in self._processors:
+            for _ in range(nb):
+                try:
+                    collected.append(proc.output())
+                except IndexError as e:
+                    print(f"Processor {proc.get_name()} is already empty: {e}")
+                    break
+        plugin.process_output(collected)
 
 
 def _header(title: str) -> None:
