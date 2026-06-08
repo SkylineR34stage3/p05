@@ -21,7 +21,7 @@ class CSVExport:
 
 class JSONExport:
     def process_output(self, data: list[tuple[int, str]]) -> None:
-        print("CSV Output:\n" +
+        print("JSON Output:\n" +
               "{" +
               ", ".join(f'"item_{rank}": "{value}"' for rank, value in data) +
               "}")
@@ -223,7 +223,7 @@ def stream_tester() -> None:
     stream.process_stream(batch)
     stream.print_processors_stats()
 
-    print(f"\n  {_BLD}Send 3 processed data"
+    print(f"\n  {_BLD}Send 3 processed data "
           f"from each processor to a CSV plugin:{_RST}")
     stream.output_pipeline(3, CSVExport())
 
@@ -233,7 +233,7 @@ def stream_tester() -> None:
     stream.process_stream(batch2)
     stream.print_processors_stats()
 
-    print(f"\n  {_BLD}Send 5 processed data"
+    print(f"\n  {_BLD}Send 5 processed data "
           f"from each processor to a JSON plugin:{_RST}")
     stream.output_pipeline(5, JSONExport())
 
