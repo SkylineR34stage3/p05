@@ -14,6 +14,15 @@ class ExportPlugin(Protocol):
         ...
 
 
+class CSVExport:
+    def process_output(self, data: list[tuple[int, str]]) -> None:
+        print("CSV Output:\n" + ",".join(value for _, value in data))
+
+
+class JSONExport:
+    pass
+
+
 class DataProcessor(ABC):
     def __init__(self) -> None:
         self._data: list[str] = []
@@ -151,15 +160,14 @@ class DataStream:
                   f"remaining {len(proc.get_data())} on processor")
 
     def output_pipeline(self, nb: int, plugin: ExportPlugin) -> None:
-        collected: list[tuple[int, str]] = []
         for proc in self._processors:
+            collected: list[tuple[int, str]] = []
             for _ in range(nb):
                 try:
                     collected.append(proc.output())
-                except IndexError as e:
-                    print(f"Processor {proc.get_name()} is already empty: {e}")
+                except IndexError:
                     break
-        plugin.process_output(collected)
+            plugin.process_output(collected)
 
 
 def _header(title: str) -> None:
@@ -170,12 +178,12 @@ def _header(title: str) -> None:
 
 
 def stream_tester() -> None:
-    _header("Data Stream")
-
     numeric = NumericProcessor()
     text = TextProcessor()
     log = LogProcessor()
     stream = DataStream()
+
+    csv = CSVExport()
 
     batch = [
         'Hello world',
@@ -188,38 +196,25 @@ def stream_tester() -> None:
         ['Hi', 'five'],
     ]
 
-    print("  Initialize Data Stream...")
+    print(f"  {_BLD}Initialize Data Stream...\n{_RST}")
     stream.print_processors_stats()
 
-    print(f"\n  {_BLD}Registering Numeric Processor:{_RST}")
+    print(f"\n  {_BLD}Registering Processors:{_RST}")
     stream.register_processor(numeric)
-
-    print(f"\n  {_BLD}Send first batch (errors expected for 3 items):{_RST}")
-    stream.process_stream(batch)
-    stream.print_processors_stats()
-
-    print(f"\n  {_BLD}Registering Text + Log Processors:{_RST}")
     stream.register_processor(text)
     stream.register_processor(log)
 
-    print(f"\n  {_BLD}Send same batch again (all items handled):{_RST}")
+    print(f"\n  {_BLD}Send first batch of data on stream:{_RST} {batch}\n")
     stream.process_stream(batch)
     stream.print_processors_stats()
 
-    print(f"\n  {_BLD}Consume: Numeric 3, Text 2, Log 1:{_RST}")
-    for _ in range(3):
-        rank, value = numeric.output()
-        print(f"    {_CYN}[Numeric rank {rank}]{_RST} -> {value}")
-    for _ in range(2):
-        rank, value = text.output()
-        print(f"    {_CYN}[Text    rank {rank}]{_RST} -> {value}")
-    rank, value = log.output()
-    print(f"    {_CYN}[Log     rank {rank}]{_RST} -> {value}")
-    stream.print_processors_stats()
+    print(f"\n  {_BLD}Send 3 processed data"
+          f"from each processor to a CSV plugin:{_RST}")
+    stream.output_pipeline(3, csv)
 
 
 def main() -> None:
-    print(f"{_BLD}=== Code Nexus - Data Stream ==={_RST}")
+    _header("=== Code Nexus - Data Pipeline ===")
     stream_tester()
 
 
